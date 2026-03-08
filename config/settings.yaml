@@ -1,0 +1,24 @@
+video:
+  width: 1920
+  height: 1080
+  fps: 24
+  codec: libx264
+  bitrate: '4000k'
+
+tts:
+  lang: en # gTTS language code (en, es, fr, de, hi, etc.)
+
+pexels:
+  per_page: 5 # Fetch 5 candidates, pick first landscape
+  orientation: landscape
+  min_width: 1920
+
+script:
+  sections: 6 # Number of video sections to generate
+  words_per_section: 80 # ~30 seconds of narration per section
+
+youtube:
+  category_id: '22' # 22 = People & Blogs
+  privacy_status: public # Start private; change to public when ready
+  made_for_kids: false
+  notify_subscribers: true
