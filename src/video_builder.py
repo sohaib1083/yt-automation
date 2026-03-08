@@ -1,11 +1,12 @@
 """
 Video assembly using MoviePy + PIL.
 
-For each section:
-  1. Resize background image to 1920×1080
-  2. Add subtitle bar with narration text (PIL, no ImageMagick dependency)
-  3. Attach voiceover audio
-  4. Concatenate all sections → final.mp4
+Improvements over v1:
+  - 16:9 1920×1080 @ 30fps (YouTube standard)
+  - Ken Burns slow-zoom effect on each image
+  - Fade-in / fade-out transitions between sections
+  - Redesigned subtitle: centered pill-shaped box with clean white text
+  - Higher bitrate (6000k) for crisp 1080p output
 """
 
 import textwrap
@@ -17,13 +18,13 @@ from moviepy.editor import (
     AudioFileClip,
     CompositeVideoClip,
     ImageClip,
+    VideoClip,
     concatenate_videoclips,
 )
 from PIL import Image, ImageDraw, ImageFont
 
 _CONFIG_PATH = Path(__file__).parent.parent / "config" / "settings.yaml"
 
-# Font search paths (Linux / macOS)
 _FONT_CANDIDATES = [
     "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
     "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
@@ -31,6 +32,8 @@ _FONT_CANDIDATES = [
     "/System/Library/Fonts/Helvetica.ttc",
     "/Library/Fonts/Arial Bold.ttf",
 ]
+
+_FADE_DURATION = 0.5  # seconds for fade in/out
 
 
 def _load_config() -> dict:
@@ -45,50 +48,28 @@ def _find_font(size: int) -> ImageFont.FreeTypeFont:
     return ImageFont.load_default()
 
 
-def _make_subtitle_frame(
-    bg_path: Path,
-    text: str,
-    width: int = 1920,
-    height: int = 1080,
-    font_size: int = 42,
-    bar_height: int = 160,
-) -> np.ndarray:
-    """Return an RGBA numpy array: background image + subtitle bar."""
-    # Load and resize background
-    bg = Image.open(bg_path).convert("RGB").resize((width, height), Image.LANCZOS)
-    frame = bg.convert("RGBA")
+def _ken_burns_clip(image_path: Path, duration: float, width: int, height: int) -> VideoClip:
+    """
+    Ken Burns pan effect using pure numpy slicing (no per-frame PIL resize → fast).
+    Loads image at 108% size, then pans the crop window from edge to center.
+    This creates a subtle camera-movement illusion.
+    """
+    oversized_w = int(width * 1.08)
+    oversized_h = int(height * 1.08)
+    big = np.array(
+        Image.open(image_path).convert("RGB").resize((oversized_w, oversized_h), Image.LANCZOS)
+    )
+    max_x = oversized_w - width
+    max_y = oversized_h - height
 
-    # Dark gradient bar at bottom
-    bar = Image.new("RGBA", (width, bar_height), (0, 0, 0, 0))
-    draw_bar = ImageDraw.Draw(bar)
-    for y in range(bar_height):
-        alpha = int(200 * (y / bar_height))  # fade in from top of bar
-        draw_bar.line([(0, y), (width, y)], fill=(0, 0, 0, alpha))
-    frame.paste(bar, (0, height - bar_height), bar)
+    def make_frame(t: float) -> np.ndarray:
+        p = min(t / max(duration, 0.001), 1.0)
+        # Pan from (0,0) toward center as time progresses (slow zoom-in feel)
+        x0 = int(max_x * p / 2)
+        y0 = int(max_y * p / 2)
+        return big[y0 : y0 + height, x0 : x0 + width]
 
-    # Text
-    draw = ImageDraw.Draw(frame)
-    font = _find_font(font_size)
-    max_chars = (width - 80) // (font_size // 2)  # rough chars per line
-    lines = textwrap.wrap(text, width=max_chars)[:3]  # max 3 lines
-
-    line_height = font_size + 8
-    total_text_height = len(lines) * line_height
-    y = height - bar_height + (bar_height - total_text_height) // 2
-
-    for line in lines:
-        try:
-            bbox = draw.textbbox((0, 0), line, font=font)
-            text_width = bbox[2] - bbox[0]
-        except AttributeError:
-            text_width = draw.textlength(line, font=font)
-        x = (width - text_width) // 2
-        # Shadow
-        draw.text((x + 2, y + 2), line, font=font, fill=(0, 0, 0, 200))
-        draw.text((x, y), line, font=font, fill=(255, 255, 255, 255))
-        y += line_height
-
-    return np.array(frame)
+    return VideoClip(make_frame, duration=duration)
 
 
 def _build_section_clip(
@@ -101,10 +82,47 @@ def _build_section_clip(
     audio = AudioFileClip(str(audio_path))
     duration = audio.duration
 
-    frame = _make_subtitle_frame(image_path, section["narration"], width, height)
-    clip = ImageClip(frame[:, :, :3], duration=duration)  # RGB for video
-    clip = clip.set_audio(audio)
-    return clip
+    # Ken Burns background (fast numpy pan, no per-frame PIL)
+    bg_clip = _ken_burns_clip(image_path, duration, width, height)
+
+    # Subtitle overlay: RGBA image with transparent background, only the box+text drawn
+    sub_overlay = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(sub_overlay)
+    font_size = 46
+    font = _find_font(font_size)
+    max_chars = max(20, (width - 120) // (font_size // 2))
+    lines = textwrap.wrap(section["narration"], width=max_chars)[:3]
+    line_height = font_size + 10
+    total_h = len(lines) * line_height
+    padding_y = 20
+    box_w = width - 160
+    box_h = total_h + padding_y * 2
+    box_x = (width - box_w) // 2
+    box_y = height - box_h - 60
+
+    box = Image.new("RGBA", (box_w, box_h), (0, 0, 0, 0))
+    box_draw = ImageDraw.Draw(box)
+    box_draw.rounded_rectangle([0, 0, box_w - 1, box_h - 1], radius=min(30, box_h // 2), fill=(0, 0, 0, 175))
+    sub_overlay.paste(box, (box_x, box_y), box)
+
+    text_y = box_y + padding_y
+    for line in lines:
+        try:
+            bbox = draw.textbbox((0, 0), line, font=font)
+            text_w = bbox[2] - bbox[0]
+        except AttributeError:
+            text_w = draw.textlength(line, font=font)
+        text_x = (width - text_w) // 2
+        draw.text((text_x + 2, text_y + 2), line, font=font, fill=(0, 0, 0, 180))
+        draw.text((text_x, text_y), line, font=font, fill=(255, 255, 255, 255))
+        text_y += line_height
+
+    sub_clip = ImageClip(np.array(sub_overlay), duration=duration, ismask=False)
+
+    composite = CompositeVideoClip([bg_clip, sub_clip], size=(width, height))
+    composite = composite.set_audio(audio)
+    composite = composite.fadein(_FADE_DURATION).fadeout(_FADE_DURATION)
+    return composite
 
 
 def build_video(
@@ -114,11 +132,7 @@ def build_video(
     slug: str,
     videos_base: Path = None,
 ) -> Path:
-    """
-    Assemble section clips into a final MP4.
-
-    Returns path to the output video file.
-    """
+    """Assemble section clips into a final MP4. Returns path to output file."""
     cfg = _load_config()
     w = cfg["video"]["width"]
     h = cfg["video"]["height"]
@@ -157,7 +171,6 @@ def build_video(
         logger="bar",
     )
 
-    # Explicit cleanup to prevent resource warnings
     final.close()
     for c in clips:
         c.close()

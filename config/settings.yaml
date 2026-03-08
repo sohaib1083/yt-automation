@@ -1,12 +1,16 @@
 video:
   width: 1920
-  height: 1080
-  fps: 24
+  height: 1080   # 16:9 — standard YouTube landscape (most watched format)
+  fps: 30         # 30fps for smooth playback
   codec: libx264
-  bitrate: '4000k'
+  bitrate: '6000k'  # higher bitrate for crisp 1080p
 
 tts:
-  lang: en # gTTS language code (en, es, fr, de, hi, etc.)
+  # ElevenLabs (used when ELEVENLABS_API_KEY is set in .env)
+  elevenlabs_voice_id: "21m00Tcm4TlvDq8ikWAM"  # Rachel — warm, clear female narrator
+  elevenlabs_model: eleven_multilingual_v2
+  # Fallback: gTTS
+  lang: en
 
 pexels:
   per_page: 5 # Fetch 5 candidates, pick first landscape
@@ -18,7 +22,8 @@ script:
   words_per_section: 80 # ~30 seconds of narration per section
 
 youtube:
-  category_id: '22' # 22 = People & Blogs
-  privacy_status: public # Start private; change to public when ready
+  channel_name: "AI Frontiers"
+  category_id: '28'  # 28 = Science & Technology (best for AI content)
+  privacy_status: public
   made_for_kids: false
   notify_subscribers: true

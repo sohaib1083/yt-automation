@@ -1,5 +1,6 @@
 """
-Script generation using Google Gemini 2.0 Flash (free tier).
+Script generation using Google Gemini 2.5 Flash (free tier).
+Optimised for the "AI Frontiers" YouTube channel — viral AI news/explainers.
 Produces a structured JSON script saved to scripts/{slug}/script.json.
 """
 
@@ -16,6 +17,19 @@ from google import genai
 load_dotenv()
 
 _CONFIG_PATH = Path(__file__).parent.parent / "config" / "settings.yaml"
+
+# System-level persona baked into every generation
+_CHANNEL_PERSONA = """
+You are the scriptwriter for "AI Frontiers" — a fast-growing YouTube channel covering
+the latest developments in Artificial Intelligence. The audience is curious, tech-savvy
+but not necessarily engineers (age 18-40). The channel's style is:
+  • Hook-first: open with a shocking fact, question, or bold claim in the first 10 seconds
+  • Conversational but authoritative — like a knowledgeable friend explaining the news
+  • Fast-paced: no filler, every sentence earns its place
+  • Unique angles: go beyond surface-level coverage — give context, implications, what it means for everyday people
+  • Call-to-action aware: viewers should feel compelled to share/comment
+The goal is MAXIMUM retention and watch-time to grow the channel toward monetization.
+""".strip()
 
 
 def _load_config() -> dict:
@@ -36,12 +50,10 @@ def _extract_json(raw: str) -> dict:
     return json.loads(cleaned)
 
 
-def generate_script(topic: str, output_base: Path = None) -> dict:
+def generate_script(topic: str, output_base: Path = None) -> tuple:
     """
     Generate a YouTube video script for *topic* using Gemini Flash.
-
-    Returns the parsed script dict and saves it to
-    scripts/{slug}/script.json.
+    Returns (script_dict, slug) and saves to scripts/{slug}/script.json.
     """
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
@@ -53,40 +65,44 @@ def generate_script(topic: str, output_base: Path = None) -> dict:
 
     client = genai.Client(api_key=api_key)
 
-    prompt = f"""You are a YouTube scriptwriter. Create a complete video script about:
+    prompt = f"""{_CHANNEL_PERSONA}
+
+Create a complete "AI Frontiers" video script about:
 
 TOPIC: {topic}
 
 Return ONLY a valid JSON object (no markdown, no extra text) with this exact structure:
 {{
-  "title": "Catchy YouTube title under 90 characters",
-  "description": "YouTube description 200-400 characters with relevant hashtags at the end",
-  "tags": ["tag1", "tag2", ...],
+  "title": "Viral YouTube title under 80 chars — curiosity gap, numbers, or shock value work best",
+  "description": "2-3 sentence YouTube description (150-300 chars) that teases the content + ends with 5-8 trending hashtags like #AI #ArtificialIntelligence #Tech",
+  "tags": ["AI", "Artificial Intelligence", "Machine Learning", ...12-15 specific tags relevant to the topic],
   "sections": [
     {{
-      "heading": "Section heading",
-      "narration": "Spoken text for this section (~{words} words, engaging tone)",
-      "image_query": "Specific Pexels image search query for relevant background visual"
+      "heading": "Section heading (internal label)",
+      "narration": "Spoken script ~{words} words. Open section 1 with a STRONG hook — a surprising stat, bold statement, or open question. Keep all sections fast-paced and conversational.",
+      "image_query": "Specific Pexels search query for a cinematic background visual (e.g. 'futuristic robot laboratory glowing blue', NOT abstract concepts)"
     }}
   ]
 }}
 
 Requirements:
 - Exactly {num_sections} sections
-- Tags: 12-15 relevant tags
-- Each narration ~{words} words (about 30 seconds when spoken)
-- Image queries must be concrete and visual (e.g. "mountain sunrise landscape" not "concept of growth")
+- Section 1 narration MUST open with a powerful hook (e.g. "What if I told you...", "In the last 48 hours...", a shocking number)
+- Last section ends with a call-to-action (like/subscribe/comment prompt woven naturally into the script)
+- Image queries must be concrete, cinematic, and photogenic
+- Titles should be curiosity-gap or list-style (e.g. "This AI Just Changed Everything", "5 AI Breakthroughs Nobody Is Talking About")
 - Do NOT wrap in markdown code blocks"""
 
     response = client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
     script = _extract_json(response.text)
 
-    # Persist to disk
     if output_base is None:
         output_base = Path(__file__).parent.parent / "scripts"
     slug = _slugify(topic)
     out_dir = output_base / slug
     out_dir.mkdir(parents=True, exist_ok=True)
+
+    script["_topic"] = topic  # store for --resume detection
 
     script_path = out_dir / "script.json"
     with open(script_path, "w") as f:
