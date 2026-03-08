@@ -23,6 +23,16 @@ def _load_config() -> dict:
         return yaml.safe_load(f)["youtube"]
 
 
+def _get_active_channel(youtube_client) -> tuple[str, str]:
+    """Return (channel_id, channel_title) for the authenticated user's active channel."""
+    resp = youtube_client.channels().list(part="snippet", mine=True).execute()
+    items = resp.get("items", [])
+    if not items:
+        return ("unknown", "unknown")
+    ch = items[0]
+    return ch["id"], ch["snippet"]["title"]
+
+
 def upload_video(
     video_path: Path,
     script: dict,
@@ -37,6 +47,9 @@ def upload_video(
     cfg = _load_config()
     status = privacy_status or cfg["privacy_status"]
 
+    # Show which channel we're uploading to — catch surprises early
+    ch_id, ch_title = _get_active_channel(youtube_client)
+    print(f"[uploader] Channel: {ch_title} (id: {ch_id})")
     body = {
         "snippet": {
             "title": script["title"],
