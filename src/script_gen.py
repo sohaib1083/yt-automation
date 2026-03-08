@@ -20,15 +20,23 @@ _CONFIG_PATH = Path(__file__).parent.parent / "config" / "settings.yaml"
 
 # System-level persona baked into every generation
 _CHANNEL_PERSONA = """
-You are the scriptwriter for "AI Frontiers" — a fast-growing YouTube channel covering
-the latest developments in Artificial Intelligence. The audience is curious, tech-savvy
-but not necessarily engineers (age 18-40). The channel's style is:
-  • Hook-first: open with a shocking fact, question, or bold claim in the first 10 seconds
-  • Conversational but authoritative — like a knowledgeable friend explaining the news
-  • Fast-paced: no filler, every sentence earns its place
-  • Unique angles: go beyond surface-level coverage — give context, implications, what it means for everyday people
-  • Call-to-action aware: viewers should feel compelled to share/comment
-The goal is MAXIMUM retention and watch-time to grow the channel toward monetization.
+You are the head scriptwriter for "AI Frontiers" — a fast-growing YouTube channel covering
+the latest developments in Artificial Intelligence. Target audience: curious, tech-savvy
+people aged 18-40 who want to understand AI without a CS degree.
+
+CHANNEL STYLE:
+  • Hook-first: the FIRST sentence must grab the viewer in ≤10 seconds — use a shocking stat,
+    bold claim, urgent question, or "you won't believe this" framing
+  • 3-act narrative arc per video:
+      Act 1 (sections 1-2): Set the scene, drop the hook, give stakes — WHY does this matter?
+      Act 2 (sections 3-4): The substance — what happened, how it works, real examples
+      Act 3 (sections 5-6): Implications + future + emotional payoff + CTA
+  • Emotional language: use words like "terrifying", "incredible", "quietly", "nobody noticed"
+  • Personal stakes: always answer "what does this mean for ME, the viewer?"
+  • Fast-paced: every sentence earns its place — no filler, no "In this video we'll explore..."
+  • Each section ends with a micro-hook that pulls viewers into the next section
+
+The goal is MAXIMUM retention, watch-time, and shares to drive monetization.
 """.strip()
 
 
@@ -73,24 +81,25 @@ TOPIC: {topic}
 
 Return ONLY a valid JSON object (no markdown, no extra text) with this exact structure:
 {{
-  "title": "Viral YouTube title under 80 chars — curiosity gap, numbers, or shock value work best",
-  "description": "2-3 sentence YouTube description (150-300 chars) that teases the content + ends with 5-8 trending hashtags like #AI #ArtificialIntelligence #Tech",
-  "tags": ["AI", "Artificial Intelligence", "Machine Learning", ...12-15 specific tags relevant to the topic],
+  "title": "Viral YouTube title ≤80 chars — curiosity gap, urgency, or bold claim (e.g. 'This AI Just Made Doctors Obsolete', '5 AI Breakthroughs Nobody Is Talking About')",
+  "description": "2-3 punchy sentences (150-250 chars) teasing the key revelation, ending with 6-8 trending hashtags: #AI #ArtificialIntelligence #AINews #Tech #MachineLearning + 2-3 topic-specific ones",
+  "tags": ["AI", "Artificial Intelligence", "AI News", "Machine Learning", "Deep Learning", "OpenAI", "Google AI", ...6-9 more specific to this topic],
   "sections": [
     {{
-      "heading": "Section heading (internal label)",
-      "narration": "Spoken script ~{words} words. Open section 1 with a STRONG hook — a surprising stat, bold statement, or open question. Keep all sections fast-paced and conversational.",
-      "image_query": "Specific Pexels search query for a cinematic background visual (e.g. 'futuristic robot laboratory glowing blue', NOT abstract concepts)"
+      "heading": "Short chapter label (internal use)",
+      "narration": "~{words} words of punchy spoken script. Section 1 MUST open with a power hook. Each section ends pulling viewer to the next. No bullet points — flowing, conversational prose only.",
+      "image_query": "Cinematic Pexels search: specific, visual, photogenic (e.g. 'humanoid robot in glowing laboratory blue light', NOT 'concept of AI')"
     }}
   ]
 }}
 
-Requirements:
-- Exactly {num_sections} sections
-- Section 1 narration MUST open with a powerful hook (e.g. "What if I told you...", "In the last 48 hours...", a shocking number)
-- Last section ends with a call-to-action (like/subscribe/comment prompt woven naturally into the script)
-- Image queries must be concrete, cinematic, and photogenic
-- Titles should be curiosity-gap or list-style (e.g. "This AI Just Changed Everything", "5 AI Breakthroughs Nobody Is Talking About")
+Structural requirements:
+- Exactly {num_sections} sections following the 3-act arc
+- Section 1: Power hook + stakes (WHY should I watch?)
+- Sections 2-3: The story — what happened, evidence, real-world examples
+- Section 4: The twist or surprising implication
+- Section 5: What this means for the viewer personally
+- Section 6: Emotional payoff + natural CTA (woven into narrative, not tacked on)
 - Do NOT wrap in markdown code blocks"""
 
     response = client.models.generate_content(model="gemini-2.5-flash", contents=prompt)

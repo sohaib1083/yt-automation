@@ -1,0 +1,59 @@
+# AI Frontiers — Content Calendar
+# Hot AI topics for 2026. Run any of these through the pipeline:
+#   python -m src.pipeline --topic "<topic>"
+
+agentic_ai:
+  why: "Hottest trend of 2026 — AI that acts, not just answers"
+  videos:
+    - "AI Agents Are Quietly Replacing White-Collar Workers in 2026"
+    - "OpenAI's Agent Mode: I Gave It My Job For a Week"
+    - "5 Tasks AI Agents Can Now Do Better Than Humans"
+    - "Microsoft Copilot Agent Just Automated My Entire Workday"
+
+multimodal_ai:
+  why: "GPT-4o, Gemini 1.5, Veo 3 — huge audience interest"
+  videos:
+    - "Google Veo 3 Just Made Hollywood Nervous — Here's Why"
+    - "AI Can Now See, Hear and Think at the Same Time — What That Means"
+    - "This AI Diagnosed Cancer From a Photo Better Than Doctors"
+    - "Multimodal AI: The Upgrade Nobody Explained Properly"
+
+small_language_models:
+  why: "On-device AI is the sleeper hit of 2026"
+  videos:
+    - "Your Phone Is About to Get a Brain — On-Device AI Explained"
+    - "Why Big AI Companies Are Secretly Going SMALLER"
+    - "Llama 3 on Your Laptop: I Tested It So You Don't Have To"
+    - "The End of the Cloud? AI Is Moving to Your Device"
+
+physical_ai_robotics:
+  why: "Boston Dynamics + Tesla Optimus = massive viral potential"
+  videos:
+    - "Tesla's Optimus Robot Just Got Scary Good — Watch This"
+    - "AI Robots Are Learning Faster Than Anyone Expected in 2026"
+    - "The Real Reason Every Big Tech Company Is Building Robots"
+    - "NASA Used AI to Drive on Mars — Here's What Happened"
+
+ai_science_discovery:
+  why: "Drug discovery + climate = emotional, shareable content"
+  videos:
+    - "AI Discovered a New Drug in 48 Hours That Took Scientists 10 Years"
+    - "The AI That's Solving Climate Change (And Nobody's Talking About It)"
+    - "AlphaFold Changed Medicine — Here's What Comes Next"
+    - "AI Is Now Better at Science Than Most Scientists"
+
+ai_governance_safety:
+  why: "Deepfakes + EU AI Act = urgent, controversial, high engagement"
+  videos:
+    - "The EU Just Passed the World's Toughest AI Law — What It Means for You"
+    - "Deepfakes Are Now Indistinguishable — AI Is Fighting Back"
+    - "Is Your AI Watching You? The Privacy Crisis Nobody Talks About"
+    - "AI Safety: The Debate That Could Determine the Future of Humanity"
+
+ai_hardware:
+  why: "NVIDIA dominance + energy crisis = business + tech crossover"
+  videos:
+    - "NVIDIA's New AI Chip Is So Powerful It's Changing Everything"
+    - "The Energy Crisis Nobody Expected: AI Is Drinking the Power Grid"
+    - "Why Apple's New Chip Might Beat NVIDIA at AI"
+    - "The Secret Hardware War Behind the AI Revolution"
