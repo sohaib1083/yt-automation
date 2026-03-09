@@ -288,7 +288,7 @@ def _build_section_video(
         "-map", f"{audio_idx}:a",
         "-af", fade_a,
         "-c:v", "libx264", "-preset", "fast", "-crf", "18",
-        "-c:a", "aac", "-b:a", "192k",
+        "-c:a", "aac", "-ar", "44100", "-ac", "2", "-b:a", "192k",
         "-t", str(duration),
         "-pix_fmt", "yuv420p",
         str(out_path),
