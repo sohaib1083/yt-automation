@@ -8,10 +8,16 @@ video:
   bitrate: '6000k' # higher bitrate for crisp 1080p
 
 tts:
+  # Provider priority: ElevenLabs → Edge-TTS → Deepgram → gTTS
   # ElevenLabs (used when ELEVENLABS_API_KEY is set in .env)
   elevenlabs_voice_id: '21m00Tcm4TlvDq8ikWAM' # Rachel — warm, clear female narrator
   elevenlabs_model: eleven_multilingual_v2
-  # Fallback: gTTS
+  # Edge-TTS — Microsoft neural voices, FREE, no API key needed
+  # Options: en-US-AndrewNeural, en-US-ChristopherNeural, en-US-BrianNeural,
+  #          en-US-AriaNeural, en-US-JennyNeural, en-US-EricNeural
+  edge_voice: en-US-AndrewNeural # warm authoritative male narrator
+  # Deepgram (used when DEEPGRAM_API_KEY is set in .env)
+  # gTTS — last resort fallback
   lang: en
 
 pexels:
@@ -26,6 +32,6 @@ script:
 youtube:
   channel_name: 'AI Frontiers'
   category_id: '28' # 28 = Science & Technology (best for AI content)
-  privacy_status: private
+  privacy_status: public
   made_for_kids: false
   notify_subscribers: true

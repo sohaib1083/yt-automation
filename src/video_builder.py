@@ -47,7 +47,7 @@ _CAMERA_STYLES = [
 _FADE_SEC = 0.4
 _XFADE_DUR = 0.7   # crossfade between images within a section
 _TITLE_DUR = 1.8   # seconds the section title card is visible
-_MUSIC_VOL = 0.10  # background music volume (10%)
+_MUSIC_VOL = 0.05  # background music volume (5%)
 _SOUNDHELIX_COUNT = 17
 
 

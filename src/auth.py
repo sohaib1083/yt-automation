@@ -21,13 +21,56 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 
 SCOPES = [
-    "https://www.googleapis.com/auth/youtube.upload",
-    "https://www.googleapis.com/auth/youtube.readonly",
+    "https://www.googleapis.com/auth/youtube",  # full management (includes upload + readonly)
 ]
 
 _BASE = Path(__file__).parent.parent
 _TOKEN_PATH = _BASE / "credentials" / "token.pickle"
 _SECRETS_PATH = _BASE / "credentials" / "client_secrets.json"
+
+
+_FLOW_CACHE = Path("/tmp/yt_oauth_state.json")
+
+
+def get_auth_url() -> str:
+    """
+    Generate OAuth URL, cache the code_verifier to disk, return the URL.
+    Call once, show URL to user → they authorize → call complete_auth(redirect_url).
+    """
+    import json
+    flow = InstalledAppFlow.from_client_secrets_file(str(_SECRETS_PATH), SCOPES)
+    flow.redirect_uri = "http://localhost:8080/"
+    auth_url, _ = flow.authorization_url(
+        access_type="offline",
+        include_granted_scopes="true",
+        prompt="consent",
+    )
+    _FLOW_CACHE.write_text(json.dumps({"code_verifier": flow.code_verifier}))
+    return auth_url
+
+
+def complete_auth(redirect_url: str) -> Credentials:
+    """Load cached code_verifier, exchange auth code for token."""
+    import json, urllib.parse
+    if not _FLOW_CACHE.exists():
+        raise FileNotFoundError("No cached auth state — call get_auth_url() first.")
+    state = json.loads(_FLOW_CACHE.read_text())
+    _FLOW_CACHE.unlink(missing_ok=True)
+
+    parsed = urllib.parse.urlparse(redirect_url)
+    params = urllib.parse.parse_qs(parsed.query)
+    if "code" not in params:
+        raise ValueError("No 'code' in redirect URL.")
+
+    # Reconstruct flow with the same code_verifier so PKCE check passes
+    flow = InstalledAppFlow.from_client_secrets_file(str(_SECRETS_PATH), SCOPES)
+    flow.redirect_uri = "http://localhost:8080/"
+    flow.code_verifier = state["code_verifier"]
+    # Google returns a superset of requested scopes — tell oauthlib that's fine
+    os.environ.setdefault("OAUTHLIB_RELAX_TOKEN_SCOPE", "1")
+    flow.fetch_token(code=params["code"][0])
+    _FLOW_CACHE.unlink(missing_ok=True)
+    return flow.credentials
 
 
 def _run_manual_flow(flow: InstalledAppFlow) -> Credentials:
@@ -93,6 +136,9 @@ def get_youtube_client():
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
+        elif os.environ.get("OAUTH_REDIRECT_URL"):
+            # Non-interactive: complete auth from cached flow + env var
+            creds = complete_auth(os.environ["OAUTH_REDIRECT_URL"])
         else:
             flow = InstalledAppFlow.from_client_secrets_file(str(_SECRETS_PATH), SCOPES)
             creds = _run_manual_flow(flow)
