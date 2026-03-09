@@ -35,6 +35,7 @@ def run(
     skip_upload: bool = False,
     privacy: str = None,
     resume: bool = False,
+    fmt: str = "landscape",
 ) -> dict:
     """
     Run the full pipeline and return a result dict with paths and YouTube URL.
@@ -70,16 +71,17 @@ def run(
     audio_paths = generate_voiceovers(sections, slug)
 
     # ── Stage 3: Image Fetching ────────────────────────────────────────────
-    print(f"\n[pipeline] Stage 3 — Image Fetching ({len(sections)} images)")
-    from src.image_fetcher import fetch_images
+    orientation = "portrait" if fmt == "shorts" else "landscape"
+    print(f"\n[pipeline] Stage 3 — Image Fetching ({len(sections)} sections × 3 images)")
+    from src.image_fetcher import fetch_multi_images
 
-    image_paths = fetch_images(sections, slug)
+    image_paths = fetch_multi_images(sections, slug, n_per_section=3, orientation=orientation)
 
     # ── Stage 4: Video Assembly ────────────────────────────────────────────
     print(f"\n[pipeline] Stage 4 — Video Assembly")
     from src.video_builder import build_video
 
-    video_path = build_video(sections, image_paths, audio_paths, slug)
+    video_path = build_video(sections, image_paths, audio_paths, slug, fmt=fmt)
 
     result = {
         "slug": slug,
@@ -131,6 +133,12 @@ def main() -> None:
         help="Stop after video assembly; do not upload to YouTube",
     )
     parser.add_argument(
+        "--format",
+        default="landscape",
+        choices=["landscape", "shorts"],
+        help="Video format: landscape (1920×1080) or shorts (1080×1920 portrait)",
+    )
+    parser.add_argument(
         "--resume",
         action="store_true",
         help="Skip stages whose output already exists on disk",
@@ -144,6 +152,7 @@ def main() -> None:
             skip_upload=args.skip_upload,
             privacy=args.privacy,
             resume=args.resume,
+            fmt=args.format,
         )
     except EnvironmentError as e:
         print(f"\n[pipeline] ✗ Configuration error: {e}", file=sys.stderr)

@@ -1,6 +1,8 @@
 video:
   width: 1920
   height: 1080 # 16:9 — standard YouTube landscape (most watched format)
+  shorts_width: 1080
+  shorts_height: 1920 # 9:16 — vertical for YouTube Shorts
   fps: 30 # 30fps for smooth playback
   codec: libx264
   bitrate: '6000k' # higher bitrate for crisp 1080p
